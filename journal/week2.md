@@ -89,8 +89,8 @@ from flask import got_request_exception
 
 #Initialize the Rollbar object
 rollbar_access_token = os.getenv('ROLLBAR_ACCESS_TOKEN')
-@app.before_first_request
-def init_rollbar():
+
+with app.app_context():
     """init rollbar module"""
     rollbar.init(
         # access token
@@ -111,6 +111,57 @@ def rollbar_test():
     rollbar.report_message('Hello World!', 'warning')
     return "Hello World!"
 ```
+
+- # Setting up AWS X-Ray
+```
+export AWS_DEFAULT_REGION="ap-south-1"
+```
+
+- Deps
+```
+aws-xray-sdk
+```
+
+- Modification to app.py
+```
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
+
+xray_url = os.getenv("AWS_XRAY_URL")
+xray_recorder.configure(service='Cruddur', dynamic_naming=xray_url)
+XRayMiddleware(app, xray_recorder)
+```
+
+- Create an X-Ray group
+```
+FLASK_ADDRESS="https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
+aws xray create-group \
+   --group-name "Cruddur" \
+   --filter-expression "service(\"$FLASK_ADDRESS\") {fault OR error}"
+```
+
+- Create a Sampling rule:
+```
+#xray.json
+{
+  "SamplingRule": {
+      "RuleName": "Cruddur",
+      "ResourceARN": "*",
+      "Priority": 9000,
+      "FixedRate": 0.1,
+      "ReservoirSize": 5,
+      "ServiceName": "Cruddur",
+      "ServiceType": "*",
+      "Host": "*",
+      "HTTPMethod": "*",
+      "URLPath": "*",
+      "Version": 1
+  }
+}
+```
+
+
+
 
 
 ### Homework
