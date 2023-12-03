@@ -18,6 +18,8 @@ vscode:
   extensions:
     - 42Crunch.vscode-openapi
 
+    - ms-python.python
+
 ports:
   - name: frontend
     port: 3000

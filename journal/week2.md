@@ -51,3 +51,69 @@ trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
 ```
 
+- Add tracers wherever you want
+```
+from opentelemetry import trace
+
+with tracer.start_as_current_span("mock-home-data"):
+    <your code>
+    # Honeycomb: Creating Span manually
+      span = trace.get_current_span()
+      span.set_attribute("app.run.time", some_relevant_value)
+    # Using the span object above you can create multiple spans
+    # Reason to do this: replace the loggers with Span and instead of reading logs observe them. That's Observability.
+```
+
+- ## Setting up Rollbar
+
+- Add dependency to backend 
+```
+blinker
+rollbar
+```
+
+- Add Rollbar Access token Env Vars
+```
+export ROLLBAR_ACCESS_TOKEN=""
+gp env ROLLBAR_ACCESS_TOKEN=""
+```
+
+- In app.py backend
+
+```
+#Import modules
+import os
+import rollbar
+import rollbar.contrib.flask
+from flask import got_request_exception
+
+#Initialize the Rollbar object
+rollbar_access_token = os.getenv('ROLLBAR_ACCESS_TOKEN')
+@app.before_first_request
+def init_rollbar():
+    """init rollbar module"""
+    rollbar.init(
+        # access token
+        rollbar_access_token,
+        # environment name
+        'production',
+        # server root directory, makes tracebacks prettier
+        root=os.path.dirname(os.path.realpath(__file__)),
+        # flask already sets up logging
+        allow_logging_basic_config=False)
+
+    # send exceptions from `app` to rollbar, using flask's signal system.
+    got_request_exception.connect(rollbar.contrib.flask.report_exception, app)
+
+#Test if it is working
+@app.route('/rollbar/test')
+def rollbar_test():
+    rollbar.report_message('Hello World!', 'warning')
+    return "Hello World!"
+```
+
+
+### Homework
+1. Instrument the honeycomb for frontend to observe network latency between frontend and backend latency.
+2. Add custom instrumentation to Honeycomb to add more attributes eg. UserId, Add a custom span.
+3. Run custom queries in Honeycob and save them later. eg. Latency by userId, recent traces.
