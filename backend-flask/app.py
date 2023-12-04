@@ -32,6 +32,10 @@ from flask import got_request_exception
 # from aws_xray_sdk.core import xray_recorder
 # from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
 
+## Module for Cloudwatch
+import logging
+from cloudwatch import cloudwatch
+
 # Instrumenting X-RAY
 # xray_url = os.getenv("AWS_XRAY_URL")
 # xray_recorder.configure(service='backend-flask', dynamic_naming=xray_url)
@@ -44,6 +48,17 @@ trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
 
 rollbar_access_token = os.getenv('ROLLBAR_ACCESS_TOKEN')
+
+# Instrumenting Cloudwatch logs
+logger = logging.getLogger('my_logger')
+formatter = logging.Formatter('%(asctime)s : %(levelname)s - %(message)s')
+
+handler = cloudwatch.CloudwatchHandler('cruddr')
+
+handler.setFormatter(formatter)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(handler)
+logger.warning("Watch out! Something happened!")
 
 app = Flask(__name__)
 FlaskInstrumentor().instrument_app(app)
