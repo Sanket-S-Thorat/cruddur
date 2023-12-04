@@ -134,10 +134,9 @@ XRayMiddleware(app, xray_recorder)
 
 - Create an X-Ray group
 ```
-FLASK_ADDRESS="https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
 aws xray create-group \
-   --group-name "Cruddur" \
-   --filter-expression "service(\"$FLASK_ADDRESS\") {fault OR error}"
+   --group-name "cruddr" \
+   --filter-expression "service(\"backend-flask\")"
 ```
 
 - Create a Sampling rule:
@@ -158,6 +157,43 @@ aws xray create-group \
       "Version": 1
   }
 }
+```
+
+- Create sampling group
+```
+aws xray create-sampling-rule --cli-input-json file://_docs/aws/xray.json
+```
+
+```
+# Add docker container for X-Ray under docker compose
+xray-daemon:
+    image: "amazon/aws-xray-daemon"
+    environment:
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_REGION: "ca-central-1"
+    command:
+      - "xray -o -b xray-daemon:2000"
+    ports:
+      - 2000:2000/udp
+```
+
+- To  use XRay segments
+```
+# Import the XRay recorder
+from aws_xray_sdk.core import xray_recorder
+
+# Add annotation to the API method you want to trace, to create a segment
+@@xray_recorder.capture('service:data-home')
+
+# Open and close the subsegment and log any relevan info
+subsegment = xray_recorder.begin_subsegment('mock-data')
+    # xray ---
+    dict = {
+      "now": now.isoformat(),
+      "results-size": len(model['data'])
+    }
+subsegment.put_metadata('key', dict, 'namespace')
 ```
 
 
