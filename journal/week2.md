@@ -196,8 +196,38 @@ subsegment = xray_recorder.begin_subsegment('mock-data')
 subsegment.put_metadata('key', dict, 'namespace')
 ```
 
+## Implementing Cloudwatch logs
 
+- Deps
+```
+cloudwatch
+```
 
+- Modification to app.py
+```
+## Module for Cloudwatch
+import logging
+from cloudwatch import cloudwatch
+
+# Instrumenting Cloudwatch logs
+logger = logging.getLogger('my_logger')
+formatter = logging.Formatter('%(asctime)s : %(levelname)s - %(message)s')
+
+handler = cloudwatch.CloudwatchHandler('cruddr')
+
+handler.setFormatter(formatter)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(handler)
+logger.warning("Watch out! Something happened!")
+```
+
+- Add following to docker compose under backend-flask 
+```
+# Env Vars for Cloudwatch
+AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION}"
+AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+```
 
 
 ### Homework
